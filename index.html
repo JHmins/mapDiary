@@ -6,10 +6,21 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<!-- 지도를 표시할 div 입니다 -->
-<div id="map"></div>
+    <header class="header">
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="장소를 검색하세요">
+            <button onclick="searchPlaces()">검색</button>
+        </div>
+    </header>
+    <div class="container">
+        <div id="map"></div>
+        <div id="searchResults" class="search-results">
+            <h3>검색 결과</h3>
+            <ul id="placesList"></ul>
+        </div>
+    </div>
 
-<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=7f1a418df01a500080c73197de878abd"></script>
-<script src="script.js"></script>
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=7f1a418df01a500080c73197de878abd&libraries=services"></script>
+    <script src="script.js"></script>
 </body>
 </html>
