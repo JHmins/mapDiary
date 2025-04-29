@@ -7,6 +7,31 @@ var mapContainer = document.getElementById('map'), // 지도를 표시할 div
 // 지도를 표시할 div와  지도 옵션으로  지도를 생성합니다
 var map = new kakao.maps.Map(mapContainer, mapOption);
 
+// 지도타입 컨트롤의 지도 또는 스카이뷰 버튼을 클릭하면 호출되어 지도타입을 바꾸는 함수입니다
+function setMapType(maptype) { 
+    var roadmapControl = document.getElementById('btnRoadmap');
+    var skyviewControl = document.getElementById('btnSkyview'); 
+    if (maptype === 'roadmap') {
+        map.setMapTypeId(kakao.maps.MapTypeId.ROADMAP);    
+        roadmapControl.className = 'selected_btn';
+        skyviewControl.className = 'btn';
+    } else {
+        map.setMapTypeId(kakao.maps.MapTypeId.HYBRID);    
+        skyviewControl.className = 'selected_btn';
+        roadmapControl.className = 'btn';
+    }
+}
+
+// 지도 확대, 축소 컨트롤에서 확대 버튼을 누르면 호출되어 지도를 확대하는 함수입니다
+function zoomIn() {
+    map.setLevel(map.getLevel() - 1);
+}
+
+// 지도 확대, 축소 컨트롤에서 축소 버튼을 누르면 호출되어 지도를 확대하는 함수입니다
+function zoomOut() {
+    map.setLevel(map.getLevel() + 1);
+}
+
 // 마커를 담을 배열
 var markers = [];
 // 인포윈도우를 담을 배열
@@ -23,6 +48,8 @@ var markersVisible = true;
 var currentInfowindow = null;
 // 임시 검색 마커를 담을 배열
 var tempMarkers = [];
+// 마커 순서를 저장할 변수
+var markerCount = 0;
 // 폴리라인 객체
 var polyline = new kakao.maps.Polyline({
     path: [],
@@ -45,11 +72,27 @@ function updatePolyline() {
 kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
     var latlng = mouseEvent.latLng;
     
+    // 마커 순서 증가
+    markerCount++;
+    
     // 새로운 마커 생성
     var marker = new kakao.maps.Marker({
         position: latlng,
         map: map
     });
+    
+    // 마커에 순서 표시
+    var markerContent = document.createElement('div');
+    markerContent.className = 'marker-number';
+    markerContent.textContent = markerCount.toString().padStart(2, '0');
+    
+    // 마커 이미지 생성
+    var markerImage = new kakao.maps.MarkerImage(
+        'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="%23FFD700"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23000" font-size="16" font-weight="bold">' + markerCount.toString().padStart(2, '0') + '</text></svg>',
+        new kakao.maps.Size(40, 40)
+    );
+    
+    marker.setImage(markerImage);
     
     markers.push(marker);
     updatePolyline();
@@ -62,8 +105,19 @@ kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
             
             // 인포윈도우 생성
             var infowindow = new kakao.maps.InfoWindow({
-                content: '<div style="padding:5px;font-size:12px;">' + address + '</div>'
+                content: `
+                    <div style="padding:5px;font-size:12px;">
+                        <div>${address}</div>
+                        <button onclick="removeMarker(${marker.__uniqueId = Date.now()})" 
+                                style="margin-top:5px;padding:3px 8px;background-color:#ff4444;color:white;border:none;border-radius:3px;cursor:pointer;">
+                            삭제
+                        </button>
+                    </div>
+                `
             });
+            
+            // 마커를 uniqueId로 찾을 수 있도록 전역 객체에 저장
+            window[marker.__uniqueId] = marker;
             
             // 마커 클릭 이벤트
             kakao.maps.event.addListener(marker, 'click', function() {
@@ -114,8 +168,19 @@ function searchPlaces() {
                 
                 // 인포윈도우 생성
                 var infowindow = new kakao.maps.InfoWindow({
-                    content: '<div style="padding:5px;font-size:12px;">' + place.place_name + '</div>'
+                    content: `
+                        <div style="padding:5px;font-size:12px;">
+                            <div>${place.place_name}</div>
+                            <button onclick="removeMarker(${marker.__uniqueId = Date.now()})" 
+                                    style="margin-top:5px;padding:3px 8px;background-color:#ff4444;color:white;border:none;border-radius:3px;cursor:pointer;">
+                                삭제
+                            </button>
+                        </div>
+                    `
                 });
+                
+                // 마커를 uniqueId로 찾을 수 있도록 전역 객체에 저장
+                window[marker.__uniqueId] = marker;
                 
                 // 마커 클릭 이벤트
                 kakao.maps.event.addListener(marker, 'click', function() {
@@ -193,11 +258,22 @@ function displayPlacesList(places) {
                 // 임시 검색 마커들 제거
                 removeTempMarkers();
                 
+                // 마커 순서 증가
+                markerCount++;
+                
                 // 선택한 장소의 마커 생성
                 var marker = new kakao.maps.Marker({
                     map: map,
                     position: new kakao.maps.LatLng(place.y, place.x)
                 });
+                
+                // 마커에 순서 표시
+                var markerImage = new kakao.maps.MarkerImage(
+                    'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="%23FFD700"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23000" font-size="16" font-weight="bold">' + markerCount.toString().padStart(2, '0') + '</text></svg>',
+                    new kakao.maps.Size(40, 40)
+                );
+                
+                marker.setImage(markerImage);
                 
                 // 선택한 마커를 영구 마커 배열에 추가
                 markers.push(marker);
@@ -205,8 +281,19 @@ function displayPlacesList(places) {
                 
                 // 인포윈도우 생성
                 var infowindow = new kakao.maps.InfoWindow({
-                    content: '<div style="padding:5px;font-size:12px;">' + place.place_name + '</div>'
+                    content: `
+                        <div style="padding:5px;font-size:12px;">
+                            <div>${place.place_name}</div>
+                            <button onclick="removeMarker(${marker.__uniqueId = Date.now()})" 
+                                    style="margin-top:5px;padding:3px 8px;background-color:#ff4444;color:white;border:none;border-radius:3px;cursor:pointer;">
+                                삭제
+                            </button>
+                        </div>
+                    `
                 });
+                
+                // 마커를 uniqueId로 찾을 수 있도록 전역 객체에 저장
+                window[marker.__uniqueId] = marker;
                 
                 // 마커 클릭 이벤트
                 kakao.maps.event.addListener(marker, 'click', function() {
@@ -258,6 +345,54 @@ function removeAllMarkers() {
     
     // 폴리라인 제거
     polyline.setPath([]);
+}
+
+// 마커 삭제 함수
+function removeMarker(uniqueId) {
+    var marker = window[uniqueId];
+    if (!marker) return;
+    
+    // 마커 배열에서 제거
+    var index = markers.indexOf(marker);
+    if (index > -1) {
+        markers.splice(index, 1);
+    }
+    
+    // 임시 마커 배열에서도 제거
+    index = tempMarkers.indexOf(marker);
+    if (index > -1) {
+        tempMarkers.splice(index, 1);
+    }
+    
+    // 마커를 지도에서 제거
+    marker.setMap(null);
+    
+    // 전역 객체에서 마커 참조 제거
+    delete window[uniqueId];
+    
+    // 폴리라인 업데이트
+    updatePolyline();
+    
+    // 인포윈도우 닫기
+    if (currentInfowindow) {
+        currentInfowindow.close();
+        currentInfowindow = null;
+    }
+    
+    // 마커 순서 재정렬
+    updateMarkerNumbers();
+}
+
+// 마커 순서 업데이트 함수
+function updateMarkerNumbers() {
+    markers.forEach(function(marker, index) {
+        var markerImage = new kakao.maps.MarkerImage(
+            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="%23FFD700"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23000" font-size="16" font-weight="bold">' + (index + 1).toString().padStart(2, '0') + '</text></svg>',
+            new kakao.maps.Size(40, 40)
+        );
+        marker.setImage(markerImage);
+    });
+    markerCount = markers.length;
 }
 
 // 엔터 키로 검색
