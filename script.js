@@ -73,6 +73,14 @@ function updatePolyline() {
     polyline.setPath(path);
 }
 
+// 마커 이미지 생성 함수 수정
+function createMarkerImage(number) {
+    return new kakao.maps.MarkerImage(
+        'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48"><path d="M18 0C8.059 0 0 8.059 0 18c0 7.2 4.8 13.2 11.4 15.6L18 48l6.6-14.4C31.2 31.2 36 25.2 36 18c0-9.941-8.059-18-18-18zm0 25.2c-4.2 0-7.2-3-7.2-7.2s3-7.2 7.2-7.2 7.2 3 7.2 7.2-3 7.2-7.2 7.2z" fill="%23D4A373"/><path d="M18 10.8c-4.2 0-7.2 3-7.2 7.2s3 7.2 7.2 7.2 7.2-3 7.2-7.2-3-7.2-7.2-7.2zm0 10.8c-2.4 0-3.6-1.2-3.6-3.6s1.2-3.6 3.6-3.6 3.6 1.2 3.6 3.6-1.2 3.6-3.6 3.6z" fill="%23FEFAE0"/><text x="50%" y="50%" text-anchor="middle" dy=".1em" fill="%238B4513" font-size="14" font-weight="bold">' + number.toString().padStart(2, '0') + '</text></svg>',
+        new kakao.maps.Size(36, 48)
+    );
+}
+
 // 지도 클릭 이벤트
 kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
     // 열려있는 인포윈도우 닫기
@@ -94,13 +102,8 @@ kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
             map: map
         });
         
-        // 마커 이미지 생성
-        var markerImage = new kakao.maps.MarkerImage(
-            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="%23FFD700"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23000" font-size="16" font-weight="bold">' + markerCount.toString().padStart(2, '0') + '</text></svg>',
-            new kakao.maps.Size(40, 40)
-        );
-        
-        marker.setImage(markerImage);
+        // 마커 이미지 설정
+        marker.setImage(createMarkerImage(markerCount));
         
         markers.push(marker);
         updatePolyline();
@@ -118,37 +121,39 @@ kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
                 // 인포윈도우 생성
                 var infowindow = new kakao.maps.InfoWindow({
                     content: `
-                        <div style="padding:12px;font-size:13px;min-width:200px;background:white;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.1);">
-                            <input type="text" id="title-${uniqueId}" 
-                                style="width:100%;padding:6px;margin-bottom:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;" 
-                                placeholder="제목을 입력하세요" 
-                                value="${markerTitles[uniqueId] || ''}"
-                                oninput="saveTitle(${uniqueId})">
-                            <div style="color:#666;font-size:12px;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:8px;">${address}</div>
-                            <div style="margin-bottom:8px;">
-                                <div style="margin-bottom:4px;color:#666;font-size:12px;display:flex;justify-content:space-between;align-items:center;">
-                                    <span>별점</span>
-                                    <span style="color:#666;font-size:12px;">${markerRatings[uniqueId] || 0}/5</span>
+                        <div style="position:relative;">
+                            <div style="padding:10px;font-size:13px;min-width:220px;max-width:280px;background:white;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.1);box-sizing:border-box;">
+                                <input type="text" id="title-${uniqueId}" 
+                                    style="width:100%;padding:6px;margin-bottom:6px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;" 
+                                    placeholder="제목을 입력하세요" 
+                                    value="${markerTitles[uniqueId] || ''}"
+                                    oninput="saveTitle(${uniqueId})">
+                                <div style="color:#666;font-size:12px;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:6px;">${address}</div>
+                                <div style="margin-bottom:6px;">
+                                    <div style="margin-bottom:4px;color:#666;font-size:12px;display:flex;justify-content:space-between;align-items:center;">
+                                        <span>별점</span>
+                                        <span style="color:#666;font-size:12px;">${markerRatings[uniqueId] || 0}/5</span>
+                                    </div>
+                                    <div class="star-rating" style="display:flex;gap:4px;">
+                                        ${[1,2,3,4,5].map(star => `
+                                            <span onclick="setRating(${uniqueId}, ${star})" 
+                                                  style="cursor:pointer;font-size:20px;color:${markerRatings[uniqueId] >= star ? '#FFD700' : '#ddd'};">
+                                                ★
+                                            </span>
+                                        `).join('')}
+                                    </div>
                                 </div>
-                                <div class="star-rating" style="display:flex;gap:4px;">
-                                    ${[1,2,3,4,5].map(star => `
-                                        <span onclick="setRating(${uniqueId}, ${star})" 
-                                              style="cursor:pointer;font-size:20px;color:${markerRatings[uniqueId] >= star ? '#FFD700' : '#ddd'};">
-                                            ★
-                                        </span>
-                                    `).join('')}
+                                <div style="margin-bottom:6px;">
+                                    <textarea id="memo-${uniqueId}" 
+                                        style="width:100%;height:60px;padding:6px;resize:none;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:inherit;box-sizing:border-box;" 
+                                        placeholder="메모를 입력하세요" 
+                                        oninput="saveMemo(${uniqueId})">${markerMemos[uniqueId] || ''}</textarea>
                                 </div>
                             </div>
-                            <div>
-                                <textarea id="memo-${uniqueId}" 
-                                    style="width:100%;height:70px;margin-bottom:8px;padding:8px;resize:none;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:inherit;box-sizing:border-box;" 
-                                    placeholder="메모를 입력하세요" 
-                                    oninput="saveMemo(${uniqueId})">${markerMemos[uniqueId] || ''}</textarea>
-                                <button onclick="removeMarker(${uniqueId})" 
-                                    style="width:100%;padding:6px 12px;background-color:#ff4444;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;transition:background-color 0.2s;">
-                                    삭제
-                                </button>
-                            </div>
+                            <button onclick="removeMarker(${uniqueId})" 
+                                style="position:absolute;bottom:-30px;right:0;padding:4px 12px;background-color:#ff4444;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;transition:background-color 0.2s;opacity:0.9;box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+                                삭제
+                            </button>
                         </div>
                     `
                 });
@@ -177,18 +182,20 @@ kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
 // 장소 검색 함수
 function searchPlaces() {
     var keyword = document.getElementById('searchInput').value;
-    
-    if (!keyword) {
-        alert('검색어를 입력해주세요.');
-        return;
+    if (!keyword.replace(/^\s+|\s+$/g, '')) {
+        alert('키워드를 입력해주세요!');
+        return false;
     }
-    
+
     // 이전 검색 결과의 임시 마커들 제거
     removeTempMarkers();
-    
-    var places = new kakao.maps.services.Places();
-    
-    places.keywordSearch(keyword, function(results, status) {
+
+    // 검색 결과 패널 표시
+    document.getElementById('searchResults').classList.remove('hidden');
+
+    // 장소 검색 객체를 통해 키워드로 장소검색을 요청
+    var ps = new kakao.maps.services.Places();
+    ps.keywordSearch(keyword, function(results, status) {
         if (status === kakao.maps.services.Status.OK) {
             displayPlacesList(results);
             
@@ -202,31 +209,7 @@ function searchPlaces() {
                 });
                 
                 tempMarkers.push(marker);
-                
                 bounds.extend(new kakao.maps.LatLng(place.y, place.x));
-                
-                // 인포윈도우 생성
-                var infowindow = new kakao.maps.InfoWindow({
-                    content: `
-                        <div style="padding:12px;font-size:13px;min-width:200px;background:white;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.1);">
-                            <div style="color:#666;font-size:12px;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:8px;">${place.place_name}</div>
-                            <div style="color:#666;font-size:12px;">${place.address_name}</div>
-                        </div>
-                    `
-                });
-                
-                // 마커 클릭 이벤트
-                kakao.maps.event.addListener(marker, 'click', function() {
-                    if (currentInfowindow) {
-                        currentInfowindow.close();
-                    }
-                    if (currentInfowindow !== infowindow) {
-                        infowindow.open(map, marker);
-                        currentInfowindow = infowindow;
-                    } else {
-                        currentInfowindow = null;
-                    }
-                });
             });
             
             map.setBounds(bounds);
@@ -245,13 +228,18 @@ function displayMarker(place) {
     
     markers.push(marker);
     
+    var uniqueId = Date.now();
+    
+    // 마커를 uniqueId로 찾을 수 있도록 전역 객체에 저장
+    window[uniqueId] = marker;
+    marker.__uniqueId = uniqueId;
+    marker.__placeName = place.place_name;
+    marker.__address = place.road_address_name || place.address_name;
+    
     // 인포윈도우 생성
     var infowindow = new kakao.maps.InfoWindow({
-        content: '<div style="padding:5px;font-size:12px;">' + place.place_name + '</div>'
+        content: createInfoWindowContent(uniqueId)
     });
-    
-    // 인포윈도우 배열에 추가
-    infowindows.push(infowindow);
     
     // 마커 클릭 이벤트
     kakao.maps.event.addListener(marker, 'click', function() {
@@ -308,13 +296,8 @@ function displayPlacesList(places) {
                         position: new kakao.maps.LatLng(place.y, place.x)
                     });
                     
-                    // 마커에 순서 표시
-                    var markerImage = new kakao.maps.MarkerImage(
-                        'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="%23FFD700"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23000" font-size="16" font-weight="bold">' + markerCount.toString().padStart(2, '0') + '</text></svg>',
-                        new kakao.maps.Size(40, 40)
-                    );
-                    
-                    marker.setImage(markerImage);
+                    // 마커 이미지 설정
+                    marker.setImage(createMarkerImage(markerCount));
                     
                     // 선택한 마커를 영구 마커 배열에 추가
                     markers.push(marker);
@@ -328,37 +311,39 @@ function displayPlacesList(places) {
                     // 인포윈도우 생성
                     var infowindow = new kakao.maps.InfoWindow({
                         content: `
-                            <div style="padding:12px;font-size:13px;min-width:200px;background:white;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.1);">
-                                <input type="text" id="title-${uniqueId}" 
-                                    style="width:100%;padding:6px;margin-bottom:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;" 
-                                    placeholder="제목을 입력하세요" 
-                                    value="${markerTitles[uniqueId] || ''}"
-                                    oninput="saveTitle(${uniqueId})">
-                                <div style="color:#666;font-size:12px;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:8px;">${place.place_name}</div>
-                                <div style="margin-bottom:8px;">
-                                    <div style="margin-bottom:4px;color:#666;font-size:12px;display:flex;justify-content:space-between;align-items:center;">
-                                        <span>별점</span>
-                                        <span style="color:#666;font-size:12px;">${markerRatings[uniqueId] || 0}/5</span>
+                            <div style="position:relative;">
+                                <div style="padding:10px;font-size:13px;min-width:220px;max-width:280px;background:white;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.1);box-sizing:border-box;">
+                                    <input type="text" id="title-${uniqueId}" 
+                                        style="width:100%;padding:6px;margin-bottom:6px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;" 
+                                        placeholder="제목을 입력하세요" 
+                                        value="${markerTitles[uniqueId] || ''}"
+                                        oninput="saveTitle(${uniqueId})">
+                                    <div style="color:#666;font-size:12px;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:6px;">${place.place_name}</div>
+                                    <div style="margin-bottom:6px;">
+                                        <div style="margin-bottom:4px;color:#666;font-size:12px;display:flex;justify-content:space-between;align-items:center;">
+                                            <span>별점</span>
+                                            <span style="color:#666;font-size:12px;">${markerRatings[uniqueId] || 0}/5</span>
+                                        </div>
+                                        <div class="star-rating" style="display:flex;gap:4px;">
+                                            ${[1,2,3,4,5].map(star => `
+                                                <span onclick="setRating(${uniqueId}, ${star})" 
+                                                      style="cursor:pointer;font-size:20px;color:${markerRatings[uniqueId] >= star ? '#FFD700' : '#ddd'};">
+                                                    ★
+                                                </span>
+                                            `).join('')}
+                                        </div>
                                     </div>
-                                    <div class="star-rating" style="display:flex;gap:4px;">
-                                        ${[1,2,3,4,5].map(star => `
-                                            <span onclick="setRating(${uniqueId}, ${star})" 
-                                                  style="cursor:pointer;font-size:20px;color:${markerRatings[uniqueId] >= star ? '#FFD700' : '#ddd'};">
-                                                ★
-                                            </span>
-                                        `).join('')}
+                                    <div style="margin-bottom:6px;">
+                                        <textarea id="memo-${uniqueId}" 
+                                            style="width:100%;height:60px;padding:6px;resize:none;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:inherit;box-sizing:border-box;" 
+                                            placeholder="메모를 입력하세요" 
+                                            oninput="saveMemo(${uniqueId})">${markerMemos[uniqueId] || ''}</textarea>
                                     </div>
                                 </div>
-                                <div>
-                                    <textarea id="memo-${uniqueId}" 
-                                        style="width:100%;height:70px;margin-bottom:8px;padding:8px;resize:none;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:inherit;box-sizing:border-box;" 
-                                        placeholder="메모를 입력하세요" 
-                                        oninput="saveMemo(${uniqueId})">${markerMemos[uniqueId] || ''}</textarea>
-                                    <button onclick="removeMarker(${uniqueId})" 
-                                        style="width:100%;padding:6px 12px;background-color:#ff4444;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;transition:background-color 0.2s;">
-                                        삭제
-                                    </button>
-                                </div>
+                                <button onclick="removeMarker(${uniqueId})" 
+                                    style="position:absolute;bottom:-30px;right:0;padding:4px 12px;background-color:#ff4444;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;transition:background-color 0.2s;opacity:0.9;box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+                                    삭제
+                                </button>
                             </div>
                         `
                     });
@@ -442,37 +427,39 @@ function setRating(uniqueId, rating) {
         var address = marker.__address || marker.__placeName;
         
         currentInfowindow.setContent(`
-            <div style="padding:12px;font-size:13px;min-width:200px;background:white;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.1);">
-                <input type="text" id="title-${uniqueId}" 
-                    style="width:100%;padding:6px;margin-bottom:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;" 
-                    placeholder="제목을 입력하세요" 
-                    value="${markerTitles[uniqueId] || ''}"
-                    oninput="saveTitle(${uniqueId})">
-                <div style="color:#666;font-size:12px;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:8px;">${address}</div>
-                <div style="margin-bottom:8px;">
-                    <div style="margin-bottom:4px;color:#666;font-size:12px;display:flex;justify-content:space-between;align-items:center;">
-                        <span>별점</span>
-                        <span style="color:#666;font-size:12px;">${markerRatings[uniqueId] || 0}/5</span>
+            <div style="position:relative;">
+                <div style="padding:10px;font-size:13px;min-width:220px;max-width:280px;background:white;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.1);box-sizing:border-box;">
+                    <input type="text" id="title-${uniqueId}" 
+                        style="width:100%;padding:6px;margin-bottom:6px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;" 
+                        placeholder="제목을 입력하세요" 
+                        value="${markerTitles[uniqueId] || ''}"
+                        oninput="saveTitle(${uniqueId})">
+                    <div style="color:#666;font-size:12px;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:6px;">${address}</div>
+                    <div style="margin-bottom:6px;">
+                        <div style="margin-bottom:4px;color:#666;font-size:12px;display:flex;justify-content:space-between;align-items:center;">
+                            <span>별점</span>
+                            <span style="color:#666;font-size:12px;">${markerRatings[uniqueId] || 0}/5</span>
+                        </div>
+                        <div class="star-rating" style="display:flex;gap:4px;">
+                            ${[1,2,3,4,5].map(star => `
+                                <span onclick="setRating(${uniqueId}, ${star})" 
+                                      style="cursor:pointer;font-size:20px;color:${markerRatings[uniqueId] >= star ? '#FFD700' : '#ddd'};">
+                                    ★
+                                </span>
+                            `).join('')}
+                        </div>
                     </div>
-                    <div class="star-rating" style="display:flex;gap:4px;">
-                        ${[1,2,3,4,5].map(star => `
-                            <span onclick="setRating(${uniqueId}, ${star})" 
-                                  style="cursor:pointer;font-size:20px;color:${markerRatings[uniqueId] >= star ? '#FFD700' : '#ddd'};">
-                                ★
-                            </span>
-                        `).join('')}
+                    <div style="margin-bottom:6px;">
+                        <textarea id="memo-${uniqueId}" 
+                            style="width:100%;height:60px;padding:6px;resize:none;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:inherit;box-sizing:border-box;" 
+                            placeholder="메모를 입력하세요" 
+                            oninput="saveMemo(${uniqueId})">${markerMemos[uniqueId] || ''}</textarea>
                     </div>
                 </div>
-                <div>
-                    <textarea id="memo-${uniqueId}" 
-                        style="width:100%;height:70px;margin-bottom:8px;padding:8px;resize:none;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:inherit;box-sizing:border-box;" 
-                        placeholder="메모를 입력하세요" 
-                        oninput="saveMemo(${uniqueId})">${markerMemos[uniqueId] || ''}</textarea>
-                    <button onclick="removeMarker(${uniqueId})" 
-                        style="width:100%;padding:6px 12px;background-color:#ff4444;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;transition:background-color 0.2s;">
-                        삭제
-                    </button>
-                </div>
+                <button onclick="removeMarker(${uniqueId})" 
+                    style="position:absolute;bottom:-30px;right:0;padding:4px 12px;background-color:#ff4444;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;transition:background-color 0.2s;opacity:0.9;box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+                    삭제
+                </button>
             </div>
         `);
     }
@@ -522,14 +509,29 @@ function removeMarker(uniqueId) {
 // 마커 순서 업데이트 함수
 function updateMarkerNumbers() {
     markers.forEach(function(marker, index) {
-        var markerImage = new kakao.maps.MarkerImage(
-            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="%23FFD700"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23000" font-size="16" font-weight="bold">' + (index + 1).toString().padStart(2, '0') + '</text></svg>',
-            new kakao.maps.Size(40, 40)
-        );
-        marker.setImage(markerImage);
+        marker.setImage(createMarkerImage(index + 1));
     });
     markerCount = markers.length;
 }
+
+// 검색 결과 외부 클릭 시 패널 숨김
+document.addEventListener('click', function(event) {
+    var searchResults = document.getElementById('searchResults');
+    var searchInput = document.getElementById('searchInput');
+    
+    // 검색 결과 패널이나 검색 입력창을 클릭한 경우가 아닐 때
+    if (!searchResults.contains(event.target) && !searchInput.contains(event.target)) {
+        searchResults.classList.add('hidden');
+    }
+});
+
+// 검색 입력창 포커스 시 검색 결과가 있으면 표시
+document.getElementById('searchInput').addEventListener('focus', function() {
+    var placesList = document.getElementById('placesList');
+    if (placesList.children.length > 0) {
+        document.getElementById('searchResults').classList.remove('hidden');
+    }
+});
 
 // 엔터 키로 검색
 document.getElementById('searchInput').addEventListener('keypress', function(e) {
@@ -537,3 +539,117 @@ document.getElementById('searchInput').addEventListener('keypress', function(e) 
         searchPlaces();
     }
 });
+
+function createInfoWindowContent(place) {
+    if (typeof place === 'string') {
+        // 기존 마커의 상세 정보 표시
+        const uniqueId = place;
+        const marker = markers[uniqueId];
+        const address = marker.__address || marker.__placeName;
+        
+        return `
+            <div style="padding:10px;font-size:13px;min-width:220px;max-width:280px;background:white;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.1);box-sizing:border-box;">
+                <input type="text" id="title-${uniqueId}" 
+                    style="width:100%;padding:6px;margin-bottom:6px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;" 
+                    placeholder="제목을 입력하세요" 
+                    value="${markerTitles[uniqueId] || ''}"
+                    oninput="saveTitle(${uniqueId})">
+                <div style="color:#666;font-size:12px;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:6px;">${address}</div>
+                <div style="margin-bottom:6px;">
+                    <div style="margin-bottom:4px;color:#666;font-size:12px;display:flex;justify-content:space-between;align-items:center;">
+                        <span>별점</span>
+                        <span style="color:#666;font-size:12px;">${markerRatings[uniqueId] || 0}/5</span>
+                    </div>
+                    <div class="star-rating" style="display:flex;gap:4px;">
+                        ${[1,2,3,4,5].map(star => `
+                            <span onclick="setRating(${uniqueId}, ${star})" 
+                                  style="cursor:pointer;font-size:20px;color:${markerRatings[uniqueId] >= star ? '#FFD700' : '#ddd'};">
+                                ★
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>
+                <div style="margin-bottom:6px;">
+                    <textarea id="memo-${uniqueId}" 
+                        style="width:100%;height:60px;padding:6px;resize:none;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:inherit;box-sizing:border-box;" 
+                        placeholder="메모를 입력하세요" 
+                        oninput="saveMemo(${uniqueId})">${markerMemos[uniqueId] || ''}</textarea>
+                </div>
+                <button onclick="removeMarker(${uniqueId})" 
+                    style="width:100%;padding:4px 8px;background-color:#ff4444;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;transition:background-color 0.2s;opacity:0.9;box-sizing:border-box;">
+                    삭제
+                </button>
+            </div>
+        `;
+    } else {
+        // 검색 결과의 간단한 정보 표시
+        return `
+            <div style="padding:10px;font-size:13px;min-width:220px;max-width:280px;background:white;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.1);">
+                <div style="margin-bottom:8px;">
+                    <h3 style="margin:0 0 5px 0;color:#333;font-size:14px;font-weight:600;">${place.place_name}</h3>
+                    <p style="margin:0;color:#666;font-size:12px;">${place.road_address_name || place.address_name}</p>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button onclick="addMarker('${place.place_name}', '${place.road_address_name || place.address_name}', ${place.y}, ${place.x})" 
+                        style="flex:1;padding:6px 12px;background-color:#4CAF50;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">
+                        저장하기
+                    </button>
+                    <button onclick="window.open('https://map.kakao.com/link/map/${place.place_name},${place.y},${place.x}', '_blank')"
+                        style="flex:1;padding:6px 12px;background-color:#f5f5f5;color:#333;border:1px solid #ddd;border-radius:4px;cursor:pointer;font-size:12px;">
+                        상세보기
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function addMarker(placeName, address, lat, lng) {
+    markerCount++;
+    
+    // 새로운 마커 생성
+    var marker = new kakao.maps.Marker({
+        position: new kakao.maps.LatLng(lat, lng),
+        map: map
+    });
+    
+    // 마커 이미지 설정
+    marker.setImage(createMarkerImage(markerCount));
+    
+    // 마커에 장소명 저장
+    marker.__placeName = placeName;
+    marker.__address = address;
+    
+    // 마커를 배열에 추가
+    markers.push(marker);
+    updatePolyline();
+    
+    var uniqueId = Date.now();
+    
+    // 마커를 uniqueId로 찾을 수 있도록 전역 객체에 저장
+    window[uniqueId] = marker;
+    marker.__uniqueId = uniqueId;
+    
+    // 인포윈도우 생성
+    var infowindow = new kakao.maps.InfoWindow({
+        content: createInfoWindowContent(uniqueId)
+    });
+    
+    // 마커 클릭 이벤트
+    kakao.maps.event.addListener(marker, 'click', function() {
+        if (currentInfowindow) {
+            currentInfowindow.close();
+        }
+        if (currentInfowindow !== infowindow) {
+            infowindow.open(map, marker);
+            currentInfowindow = infowindow;
+        } else {
+            currentInfowindow = null;
+        }
+    });
+    
+    // 지도 중심 이동
+    var position = new kakao.maps.LatLng(lat, lng);
+    map.setCenter(position);
+    map.setLevel(3);
+}

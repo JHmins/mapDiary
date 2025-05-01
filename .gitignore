@@ -1,3 +1,11 @@
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
 # Dependencies
 node_modules/
 npm-debug.log
@@ -9,12 +17,9 @@ yarn-error.log
 .env.local
 .env.*.local
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
+# Build files
+dist/
+build/
 
-# OS
-.DS_Store
-Thumbs.db 
+# Logs
+*.log 
