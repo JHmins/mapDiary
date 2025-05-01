@@ -60,6 +60,11 @@ var polyline = new kakao.maps.Polyline({
     map: map  // 폴리라인을 지도에 표시
 });
 
+// 마커의 메모, 별점, 제목을 저장할 객체
+var markerMemos = {};
+var markerRatings = {};
+var markerTitles = {};
+
 // 폴리라인 업데이트 함수
 function updatePolyline() {
     var path = markers.map(function(marker) {
@@ -70,69 +75,103 @@ function updatePolyline() {
 
 // 지도 클릭 이벤트
 kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
+    // 열려있는 인포윈도우 닫기
+    if (currentInfowindow) {
+        currentInfowindow.close();
+        currentInfowindow = null;
+    }
+    
     var latlng = mouseEvent.latLng;
     
-    // 마커 순서 증가
-    markerCount++;
-    
-    // 새로운 마커 생성
-    var marker = new kakao.maps.Marker({
-        position: latlng,
-        map: map
-    });
-    
-    // 마커에 순서 표시
-    var markerContent = document.createElement('div');
-    markerContent.className = 'marker-number';
-    markerContent.textContent = markerCount.toString().padStart(2, '0');
-    
-    // 마커 이미지 생성
-    var markerImage = new kakao.maps.MarkerImage(
-        'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="%23FFD700"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23000" font-size="16" font-weight="bold">' + markerCount.toString().padStart(2, '0') + '</text></svg>',
-        new kakao.maps.Size(40, 40)
-    );
-    
-    marker.setImage(markerImage);
-    
-    markers.push(marker);
-    updatePolyline();
-    
-    // 클릭한 위치의 주소 정보 가져오기
-    var geocoder = new kakao.maps.services.Geocoder();
-    geocoder.coord2Address(latlng.getLng(), latlng.getLat(), function(result, status) {
-        if (status === kakao.maps.services.Status.OK) {
-            var address = result[0].address.address_name;
-            
-            // 인포윈도우 생성
-            var infowindow = new kakao.maps.InfoWindow({
-                content: `
-                    <div style="padding:5px;font-size:12px;">
-                        <div>${address}</div>
-                        <button onclick="removeMarker(${marker.__uniqueId = Date.now()})" 
-                                style="margin-top:5px;padding:3px 8px;background-color:#ff4444;color:white;border:none;border-radius:3px;cursor:pointer;">
-                            삭제
-                        </button>
-                    </div>
-                `
-            });
-            
-            // 마커를 uniqueId로 찾을 수 있도록 전역 객체에 저장
-            window[marker.__uniqueId] = marker;
-            
-            // 마커 클릭 이벤트
-            kakao.maps.event.addListener(marker, 'click', function() {
-                if (currentInfowindow) {
-                    currentInfowindow.close();
-                }
-                if (currentInfowindow !== infowindow) {
-                    infowindow.open(map, marker);
-                    currentInfowindow = infowindow;
-                } else {
-                    currentInfowindow = null;
-                }
-            });
-        }
-    });
+    // 확인 대화상자 표시
+    if (confirm('선택한 위치에 마커를 남기시겠습니까?')) {
+        // 마커 순서 증가
+        markerCount++;
+        
+        // 새로운 마커 생성
+        var marker = new kakao.maps.Marker({
+            position: latlng,
+            map: map
+        });
+        
+        // 마커 이미지 생성
+        var markerImage = new kakao.maps.MarkerImage(
+            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="%23FFD700"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23000" font-size="16" font-weight="bold">' + markerCount.toString().padStart(2, '0') + '</text></svg>',
+            new kakao.maps.Size(40, 40)
+        );
+        
+        marker.setImage(markerImage);
+        
+        markers.push(marker);
+        updatePolyline();
+        
+        // 클릭한 위치의 주소 정보 가져오기
+        var geocoder = new kakao.maps.services.Geocoder();
+        geocoder.coord2Address(latlng.getLng(), latlng.getLat(), function(result, status) {
+            if (status === kakao.maps.services.Status.OK) {
+                var address = result[0].address.address_name;
+                var uniqueId = Date.now();
+                
+                // 마커에 주소 정보 저장
+                marker.__address = address;
+                
+                // 인포윈도우 생성
+                var infowindow = new kakao.maps.InfoWindow({
+                    content: `
+                        <div style="padding:12px;font-size:13px;min-width:200px;background:white;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.1);">
+                            <input type="text" id="title-${uniqueId}" 
+                                style="width:100%;padding:6px;margin-bottom:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;" 
+                                placeholder="제목을 입력하세요" 
+                                value="${markerTitles[uniqueId] || ''}"
+                                oninput="saveTitle(${uniqueId})">
+                            <div style="color:#666;font-size:12px;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:8px;">${address}</div>
+                            <div style="margin-bottom:8px;">
+                                <div style="margin-bottom:4px;color:#666;font-size:12px;display:flex;justify-content:space-between;align-items:center;">
+                                    <span>별점</span>
+                                    <span style="color:#666;font-size:12px;">${markerRatings[uniqueId] || 0}/5</span>
+                                </div>
+                                <div class="star-rating" style="display:flex;gap:4px;">
+                                    ${[1,2,3,4,5].map(star => `
+                                        <span onclick="setRating(${uniqueId}, ${star})" 
+                                              style="cursor:pointer;font-size:20px;color:${markerRatings[uniqueId] >= star ? '#FFD700' : '#ddd'};">
+                                            ★
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div>
+                                <textarea id="memo-${uniqueId}" 
+                                    style="width:100%;height:70px;margin-bottom:8px;padding:8px;resize:none;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:inherit;box-sizing:border-box;" 
+                                    placeholder="메모를 입력하세요" 
+                                    oninput="saveMemo(${uniqueId})">${markerMemos[uniqueId] || ''}</textarea>
+                                <button onclick="removeMarker(${uniqueId})" 
+                                    style="width:100%;padding:6px 12px;background-color:#ff4444;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;transition:background-color 0.2s;">
+                                    삭제
+                                </button>
+                            </div>
+                        </div>
+                    `
+                });
+                
+                // 마커를 uniqueId로 찾을 수 있도록 전역 객체에 저장
+                window[uniqueId] = marker;
+                marker.__uniqueId = uniqueId;
+                
+                // 마커 클릭 이벤트
+                kakao.maps.event.addListener(marker, 'click', function() {
+                    if (currentInfowindow) {
+                        currentInfowindow.close();
+                    }
+                    if (currentInfowindow !== infowindow) {
+                        infowindow.open(map, marker);
+                        currentInfowindow = infowindow;
+                    } else {
+                        currentInfowindow = null;
+                    }
+                });
+            }
+        });
+    }
 });
 
 // 장소 검색 함수
@@ -155,8 +194,8 @@ function searchPlaces() {
             
             var bounds = new kakao.maps.LatLngBounds();
             
-            // 검색 결과 마커 표시
-            results.forEach(function(place) {
+            // 검색 결과 마커 표시 (상위 5개만)
+            results.slice(0, 5).forEach(function(place) {
                 var marker = new kakao.maps.Marker({
                     map: map,
                     position: new kakao.maps.LatLng(place.y, place.x)
@@ -169,18 +208,12 @@ function searchPlaces() {
                 // 인포윈도우 생성
                 var infowindow = new kakao.maps.InfoWindow({
                     content: `
-                        <div style="padding:5px;font-size:12px;">
-                            <div>${place.place_name}</div>
-                            <button onclick="removeMarker(${marker.__uniqueId = Date.now()})" 
-                                    style="margin-top:5px;padding:3px 8px;background-color:#ff4444;color:white;border:none;border-radius:3px;cursor:pointer;">
-                                삭제
-                            </button>
+                        <div style="padding:12px;font-size:13px;min-width:200px;background:white;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.1);">
+                            <div style="color:#666;font-size:12px;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:8px;">${place.place_name}</div>
+                            <div style="color:#666;font-size:12px;">${place.address_name}</div>
                         </div>
                     `
                 });
-                
-                // 마커를 uniqueId로 찾을 수 있도록 전역 객체에 저장
-                window[marker.__uniqueId] = marker;
                 
                 // 마커 클릭 이벤트
                 kakao.maps.event.addListener(marker, 'click', function() {
@@ -255,63 +288,103 @@ function displayPlacesList(places) {
         // 클릭 이벤트
         itemEl.addEventListener('click', function(place) {
             return function() {
-                // 임시 검색 마커들 제거
-                removeTempMarkers();
+                // 열려있는 인포윈도우 닫기
+                if (currentInfowindow) {
+                    currentInfowindow.close();
+                    currentInfowindow = null;
+                }
                 
-                // 마커 순서 증가
-                markerCount++;
-                
-                // 선택한 장소의 마커 생성
-                var marker = new kakao.maps.Marker({
-                    map: map,
-                    position: new kakao.maps.LatLng(place.y, place.x)
-                });
-                
-                // 마커에 순서 표시
-                var markerImage = new kakao.maps.MarkerImage(
-                    'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="%23FFD700"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23000" font-size="16" font-weight="bold">' + markerCount.toString().padStart(2, '0') + '</text></svg>',
-                    new kakao.maps.Size(40, 40)
-                );
-                
-                marker.setImage(markerImage);
-                
-                // 선택한 마커를 영구 마커 배열에 추가
-                markers.push(marker);
-                updatePolyline();
-                
-                // 인포윈도우 생성
-                var infowindow = new kakao.maps.InfoWindow({
-                    content: `
-                        <div style="padding:5px;font-size:12px;">
-                            <div>${place.place_name}</div>
-                            <button onclick="removeMarker(${marker.__uniqueId = Date.now()})" 
-                                    style="margin-top:5px;padding:3px 8px;background-color:#ff4444;color:white;border:none;border-radius:3px;cursor:pointer;">
-                                삭제
-                            </button>
-                        </div>
-                    `
-                });
-                
-                // 마커를 uniqueId로 찾을 수 있도록 전역 객체에 저장
-                window[marker.__uniqueId] = marker;
-                
-                // 마커 클릭 이벤트
-                kakao.maps.event.addListener(marker, 'click', function() {
-                    if (currentInfowindow) {
-                        currentInfowindow.close();
-                    }
-                    if (currentInfowindow !== infowindow) {
-                        infowindow.open(map, marker);
-                        currentInfowindow = infowindow;
-                    } else {
-                        currentInfowindow = null;
-                    }
-                });
-                
-                // 지도 중심 이동
-                var position = new kakao.maps.LatLng(place.y, place.x);
-                map.setCenter(position);
-                map.setLevel(3);
+                // 확인 대화상자 표시
+                if (confirm('선택한 위치에 마커를 남기시겠습니까?')) {
+                    // 임시 검색 마커들 제거
+                    removeTempMarkers();
+                    
+                    // 마커 순서 증가
+                    markerCount++;
+                    
+                    // 선택한 장소의 마커 생성
+                    var marker = new kakao.maps.Marker({
+                        map: map,
+                        position: new kakao.maps.LatLng(place.y, place.x)
+                    });
+                    
+                    // 마커에 순서 표시
+                    var markerImage = new kakao.maps.MarkerImage(
+                        'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="%23FFD700"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23000" font-size="16" font-weight="bold">' + markerCount.toString().padStart(2, '0') + '</text></svg>',
+                        new kakao.maps.Size(40, 40)
+                    );
+                    
+                    marker.setImage(markerImage);
+                    
+                    // 선택한 마커를 영구 마커 배열에 추가
+                    markers.push(marker);
+                    updatePolyline();
+                    
+                    var uniqueId = Date.now();
+                    
+                    // 마커에 장소명 저장
+                    marker.__placeName = place.place_name;
+                    
+                    // 인포윈도우 생성
+                    var infowindow = new kakao.maps.InfoWindow({
+                        content: `
+                            <div style="padding:12px;font-size:13px;min-width:200px;background:white;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.1);">
+                                <input type="text" id="title-${uniqueId}" 
+                                    style="width:100%;padding:6px;margin-bottom:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;" 
+                                    placeholder="제목을 입력하세요" 
+                                    value="${markerTitles[uniqueId] || ''}"
+                                    oninput="saveTitle(${uniqueId})">
+                                <div style="color:#666;font-size:12px;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:8px;">${place.place_name}</div>
+                                <div style="margin-bottom:8px;">
+                                    <div style="margin-bottom:4px;color:#666;font-size:12px;display:flex;justify-content:space-between;align-items:center;">
+                                        <span>별점</span>
+                                        <span style="color:#666;font-size:12px;">${markerRatings[uniqueId] || 0}/5</span>
+                                    </div>
+                                    <div class="star-rating" style="display:flex;gap:4px;">
+                                        ${[1,2,3,4,5].map(star => `
+                                            <span onclick="setRating(${uniqueId}, ${star})" 
+                                                  style="cursor:pointer;font-size:20px;color:${markerRatings[uniqueId] >= star ? '#FFD700' : '#ddd'};">
+                                                ★
+                                            </span>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                <div>
+                                    <textarea id="memo-${uniqueId}" 
+                                        style="width:100%;height:70px;margin-bottom:8px;padding:8px;resize:none;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:inherit;box-sizing:border-box;" 
+                                        placeholder="메모를 입력하세요" 
+                                        oninput="saveMemo(${uniqueId})">${markerMemos[uniqueId] || ''}</textarea>
+                                    <button onclick="removeMarker(${uniqueId})" 
+                                        style="width:100%;padding:6px 12px;background-color:#ff4444;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;transition:background-color 0.2s;">
+                                        삭제
+                                    </button>
+                                </div>
+                            </div>
+                        `
+                    });
+                    
+                    // 마커를 uniqueId로 찾을 수 있도록 전역 객체에 저장
+                    window[uniqueId] = marker;
+                    marker.__uniqueId = uniqueId;
+                    
+                    // 마커 클릭 이벤트
+                    kakao.maps.event.addListener(marker, 'click', function() {
+                        if (currentInfowindow) {
+                            currentInfowindow.close();
+                        }
+                        if (currentInfowindow !== infowindow) {
+                            infowindow.open(map, marker);
+                            currentInfowindow = infowindow;
+                        } else {
+                            currentInfowindow = null;
+                        }
+                    });
+                    
+                    // 지도 중심 이동
+                    var position = new kakao.maps.LatLng(place.y, place.x);
+                    map.setCenter(position);
+                    map.setLevel(3);
+                }
             };
         }(places[i]));
         
@@ -347,6 +420,64 @@ function removeAllMarkers() {
     polyline.setPath([]);
 }
 
+// 메모 저장 함수
+function saveMemo(uniqueId) {
+    var memoText = document.getElementById(`memo-${uniqueId}`).value;
+    markerMemos[uniqueId] = memoText;
+}
+
+// 제목 저장 함수
+function saveTitle(uniqueId) {
+    var titleText = document.getElementById(`title-${uniqueId}`).value;
+    markerTitles[uniqueId] = titleText;
+}
+
+// 별점 설정 함수
+function setRating(uniqueId, rating) {
+    markerRatings[uniqueId] = rating;
+    
+    // 현재 열려있는 인포윈도우의 내용 업데이트
+    if (currentInfowindow) {
+        var marker = window[uniqueId];
+        var address = marker.__address || marker.__placeName;
+        
+        currentInfowindow.setContent(`
+            <div style="padding:12px;font-size:13px;min-width:200px;background:white;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.1);">
+                <input type="text" id="title-${uniqueId}" 
+                    style="width:100%;padding:6px;margin-bottom:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;" 
+                    placeholder="제목을 입력하세요" 
+                    value="${markerTitles[uniqueId] || ''}"
+                    oninput="saveTitle(${uniqueId})">
+                <div style="color:#666;font-size:12px;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:8px;">${address}</div>
+                <div style="margin-bottom:8px;">
+                    <div style="margin-bottom:4px;color:#666;font-size:12px;display:flex;justify-content:space-between;align-items:center;">
+                        <span>별점</span>
+                        <span style="color:#666;font-size:12px;">${markerRatings[uniqueId] || 0}/5</span>
+                    </div>
+                    <div class="star-rating" style="display:flex;gap:4px;">
+                        ${[1,2,3,4,5].map(star => `
+                            <span onclick="setRating(${uniqueId}, ${star})" 
+                                  style="cursor:pointer;font-size:20px;color:${markerRatings[uniqueId] >= star ? '#FFD700' : '#ddd'};">
+                                ★
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>
+                <div>
+                    <textarea id="memo-${uniqueId}" 
+                        style="width:100%;height:70px;margin-bottom:8px;padding:8px;resize:none;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:inherit;box-sizing:border-box;" 
+                        placeholder="메모를 입력하세요" 
+                        oninput="saveMemo(${uniqueId})">${markerMemos[uniqueId] || ''}</textarea>
+                    <button onclick="removeMarker(${uniqueId})" 
+                        style="width:100%;padding:6px 12px;background-color:#ff4444;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;transition:background-color 0.2s;">
+                        삭제
+                    </button>
+                </div>
+            </div>
+        `);
+    }
+}
+
 // 마커 삭제 함수
 function removeMarker(uniqueId) {
     var marker = window[uniqueId];
@@ -366,6 +497,11 @@ function removeMarker(uniqueId) {
     
     // 마커를 지도에서 제거
     marker.setMap(null);
+    
+    // 메모, 별점, 제목 데이터 삭제
+    delete markerMemos[uniqueId];
+    delete markerRatings[uniqueId];
+    delete markerTitles[uniqueId];
     
     // 전역 객체에서 마커 참조 제거
     delete window[uniqueId];
