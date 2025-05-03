@@ -7,9 +7,13 @@
 </head>
 <body>
     <header class="header">
-        <div class="search-container">
-            <input type="text" id="searchInput" placeholder="장소를 검색하세요">
-            <button onclick="searchPlaces()">검색</button>
+        <div class="search-container" style="align-items:center; display:flex;">
+            <div style="display:flex; align-items:center;">
+                <img src="image/logo.png" alt="로고" width="50" height="40" style="margin-right:10px; margin-left:-20px; margin-top:-10px;">
+                <span class="logo-text" style="font-size:18px;font-weight:600;color:#8B5E3C;margin-right:24px;letter-spacing:0.5px;white-space:nowrap;margin-top:-10px;">My Map Diary</span>
+            </div>
+            <input type="text" id="searchInput" placeholder="장소를 검색하세요" style="margin-right:0;margin-top:-8px;">
+            <button onclick="searchPlaces()" style="margin-top:-8px;margin-left:-8px;">검색</button>
         </div>
     </header>
     <div class="main-container">

@@ -76,7 +76,7 @@ function updatePolyline() {
 // 마커 이미지 생성 함수 수정
 function createMarkerImage(number) {
     return new kakao.maps.MarkerImage(
-        'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48"><path d="M18 0C8.059 0 0 8.059 0 18c0 7.2 4.8 13.2 11.4 15.6L18 48l6.6-14.4C31.2 31.2 36 25.2 36 18c0-9.941-8.059-18-18-18zm0 25.2c-4.2 0-7.2-3-7.2-7.2s3-7.2 7.2-7.2 7.2 3 7.2 7.2-3 7.2-7.2 7.2z" fill="%23D4A373"/><path d="M18 10.8c-4.2 0-7.2 3-7.2 7.2s3 7.2 7.2 7.2 7.2-3 7.2-7.2-3-7.2-7.2-7.2zm0 10.8c-2.4 0-3.6-1.2-3.6-3.6s1.2-3.6 3.6-3.6 3.6 1.2 3.6 3.6-1.2 3.6-3.6 3.6z" fill="%23FEFAE0"/><text x="50%" y="50%" text-anchor="middle" dy=".1em" fill="%238B4513" font-size="14" font-weight="bold">' + number.toString().padStart(2, '0') + '</text></svg>',
+        'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48"><path d="M18 0C8.059 0 0 8.059 0 18c0 7.2 4.8 13.2 11.4 15.6L18 48l6.6-14.4C31.2 31.2 36 25.2 36 18c0-9.941-8.059-18-18-18zm0 25.2c-4.2 0-7.2-3-7.2-7.2s3-7.2 7.2-7.2 7.2 3 7.2 7.2-3 7.2-7.2 7.2z" fill="%23D4A373"/><path d="M18 10.8c-4.2 0-7.2 3-7.2 7.2s3 7.2 7.2 7.2 7.2-3 7.2-7.2-3-7.2-7.2-7.2zm0 10.8c-2.4 0-3.6-1.2-3.6-3.6s1.2-3.6 3.6-3.6 3.6 1.2 3.6 3.6-1.2 3.6-3.6 3.6z" fill="%23FEFAE0"/><text x="50%" y="50%" text-anchor="middle" dy="0em" fill="%238B4513" font-size="14" font-weight="bold">' + number.toString().padStart(2, '0') + '</text></svg>',
         new kakao.maps.Size(36, 48)
     );
 }
