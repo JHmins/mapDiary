@@ -3,7 +3,12 @@ const path = require('path');
 const app = express();
 
 // 정적 파일 제공
-app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname)));
+
+// 카카오 API 키 제공 엔드포인트
+app.get('/api/kakao-key', (req, res) => {
+    res.json({ apiKey: process.env.KAKAO_API_KEY });
+});
 
 // 기본 라우트
 app.get('/', (req, res) => {
@@ -11,7 +16,7 @@ app.get('/', (req, res) => {
 });
 
 // 서버 시작
-const PORT = 3000;
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
 }); 

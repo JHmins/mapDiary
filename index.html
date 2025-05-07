@@ -36,7 +36,34 @@
         </div>
     </div>
 
-    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=7f1a418df01a500080c73197de878abd&libraries=services"></script>
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_KAKAO_API_KEY&libraries=services"></script>
+    <script>
+        // API 키를 서버에서 가져오는 함수
+        async function getKakaoApiKey() {
+            try {
+                const response = await fetch('/api/kakao-key');
+                const data = await response.json();
+                return data.apiKey;
+            } catch (error) {
+                console.error('Error fetching Kakao API key:', error);
+                return null;
+            }
+        }
+
+        // 페이지 로드 시 API 키 설정
+        window.onload = async function() {
+            const apiKey = await getKakaoApiKey();
+            if (apiKey) {
+                const script = document.createElement('script');
+                script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services`;
+                script.onload = function() {
+                    // 지도 초기화 코드
+                    initMap();
+                };
+                document.body.appendChild(script);
+            }
+        };
+    </script>
     <script src="script.js"></script>
 </body>
 </html>
