@@ -1,6 +1,6 @@
 # 6차 수정 - Vercel 배포 및 카카오 API 보안 설정
 
-## 1. Vercel 배포
+## 1. Vercel 배포 설정
 - https://map-diary.vercel.app/
 
 ### 1.1 package.json 수정
